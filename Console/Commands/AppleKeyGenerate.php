@@ -116,12 +116,14 @@ class AppleKeyGenerate extends Command
             $privateKeyFile = Storage::disk('local')->get(config('services.apple.auth_key'));
 
             try{
+                $now = new \DateTimeImmutable();
+                $expiresAt = $now->add(new \DateInterval('P'.config('services.apple.refresh_token_interval_days').'D'));
                 $signer = new Sha256();
                 $privateKey = new Key($privateKeyFile);
                 $token = (new Builder())->issuedBy(config('services.apple.team_id'))// Configures the issuer (iss claim)
                 ->permittedFor("https://appleid.apple.com")// Configures the audience (aud claim)
-                ->issuedAt(time())// Configures the time that the token was issue (iat claim)
-                ->expiresAt(time() + 86400 * config('services.apple.refresh_token_interval_days'))// Configures the expiration time of the token (exp claim)
+                ->issuedAt($now)// Configures the time that the token was issue (iat claim)
+                ->expiresAt($expiresAt)// Configures the expiration time of the token (exp claim)
                 ->relatedTo(config('services.apple.client_id')) //Configures the subject
                 ->withHeader('kid', config('services.apple.key_id'))
                     ->withHeader('type', 'JWT')
